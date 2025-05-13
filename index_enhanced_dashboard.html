@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>꽃잔디 생육 대시보드 (실시간)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f9ff;
+      text-align: center;
+      margin: 0;
+      padding: 40px;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .card-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      width: 160px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: 0.3s;
+      border: 2px solid transparent;
+    }
+    .card:hover {
+      transform: scale(1.05);
+    }
+    .label {
+      font-size: 14px;
+      color: #666;
+    }
+    .value {
+      font-size: 22px;
+      font-weight: bold;
+      margin: 5px 0;
+    }
+    #chartContainer {
+      margin-top: 40px;
+      display: none;
+    }
+    canvas {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .warning {
+      border-color: red !important;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0% { border-color: red; }
+      50% { border-color: transparent; }
+      100% { border-color: red; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🌸 꽃잔디 생육 대시보드 (실시간)</h1>
+  <div class="card-container" id="sensorCards">
+    <!-- 센서 카드가 JS로 채워집니다 -->
+  </div>
+
+  <div id="chartContainer">
+    <h2 id="chartTitle">그래프 제목</h2>
+    <canvas id="sensorChart"></canvas>
+  </div>
+
+  <script>
+    const sensorData = {
+      '온도': { unit: '℃', range: [15, 25], data: [] },
+      '습도': { unit: '%', range: [40, 60], data: [] },
+      '토양수분': { unit: '%', range: [20, 30], data: [] },
+      '조도': { unit: 'lux', range: [20000, 60000], data: [] },
+      '토양 pH': { unit: '', range: [6.0, 7.0], data: [] }
+    };
+
+    const labels = [];  // 시간 기록용
+    let chart;
+
+    function createSensorCards() {
+      const container = document.getElementById("sensorCards");
+      container.innerHTML = '';
+      Object.keys(sensorData).forEach(sensor => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.id = "card-" + sensor;
+        div.onclick = () => showChart(sensor);
+        div.innerHTML = `
+          <div class="label">${sensor}</div>
+          <div class="value" id="val-${sensor}">--</div>
+          <div class="label" id="stat-${sensor}">측정 중...</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function fetchSensorData() {
+      // 이 부분은 실제 API로 교체 가능
+      const now = new Date();
+      const time = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      labels.push(time);
+      if (labels.length > 10) labels.shift();
+
+      Object.keys(sensorData).forEach(sensor => {
+        const min = sensorData[sensor].range[0];
+        const max = sensorData[sensor].range[1];
+        const val = (Math.random() * (max - min) + min + (Math.random() * 2 - 1)).toFixed(2);
+        const numVal = parseFloat(val);
+        sensorData[sensor].data.push(numVal);
+        if (sensorData[sensor].data.length > 10) sensorData[sensor].data.shift();
+
+        const valueSpan = document.getElementById("val-" + sensor);
+        const statusSpan = document.getElementById("stat-" + sensor);
+        const card = document.getElementById("card-" + sensor);
+
+        valueSpan.textContent = val + " " + sensorData[sensor].unit;
+
+        if (numVal < min || numVal > max) {
+          statusSpan.textContent = "⚠️ 주의";
+          card.classList.add("warning");
+        } else {
+          statusSpan.textContent = "정상";
+          card.classList.remove("warning");
+        }
+      });
+    }
+
+    function showChart(sensor) {
+      const ctx = document.getElementById('sensorChart').getContext('2d');
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [...labels],
+          datasets: [{
+            label: `${sensor} (${sensorData[sensor].unit})`,
+            data: [...sensorData[sensor].data],
+            borderColor: '#3e95cd',
+            fill: false,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: false
+            }
+          }
+        }
+      });
+
+      document.getElementById('chartTitle').innerText = `${sensor} 센서 데이터 추이`;
+      document.getElementById('chartContainer').style.display = 'block';
+    }
+
+    // 초기 실행
+    createSensorCards();
+    fetchSensorData();
+    setInterval(fetchSensorData, 5000); // 5초 간격 업데이트
+  </script>
+</body>
+</html>
