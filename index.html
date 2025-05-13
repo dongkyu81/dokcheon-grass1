@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>꽃잔디 생육환경 실시간 대시보드</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f9fbfc; padding: 20px; color: #333; }
+    h1 { text-align: center; font-size: 22px; margin-bottom: 10px; }
+    .timestamp { text-align: center; font-size: 13px; color: #777; margin-bottom: 30px; }
+    .cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-bottom: 30px; }
+    .card { width: 160px; background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; text-align: center; }
+    .card img { width: 32px; }
+    .card h3 { font-size: 14px; margin: 5px 0; color: #2b7a5b; }
+    .value { font-size: 20px; font-weight: bold; }
+    .status { font-size: 12px; margin-top: 6px; display: inline-block; padding: 3px 8px; border-radius: 10px; }
+    .ok { background: #e0f6e6; color: #2e8b57; }
+    .warn { background: #fff6d6; color: #d18c00; }
+    .bad { background: #ffe6e6; color: #cc0000; }
+  </style>
+</head>
+<body>
+
+<h1>🌸 꽃잔디 실시간 생육환경 대시보드</h1>
+<div class="timestamp" id="timestamp">데이터 수집 중...</div>
+
+<div class="cards">
+  <div class="card">
+    <img src="https://cdn-icons-png.flaticon.com/512/869/869869.png" alt="light">
+    <h3>일조량</h3>
+    <div class="value" id="lux">-</div>
+    <div class="status" id="luxStatus">-</div>
+  </div>
+  <div class="card">
+    <img src="https://cdn-icons-png.flaticon.com/512/2900/2900481.png" alt="moisture">
+    <h3>토양 수분</h3>
+    <div class="value" id="moisture">-</div>
+    <div class="status" id="moistureStatus">-</div>
+  </div>
+  <div class="card">
+    <img src="https://cdn-icons-png.flaticon.com/512/728/728093.png" alt="soil-temp">
+    <h3>토양 온도</h3>
+    <div class="value" id="soilTemp">-</div>
+    <div class="status" id="soilTempStatus">-</div>
+  </div>
+  <div class="card">
+    <img src="https://cdn-icons-png.flaticon.com/512/869/869869.png" alt="air-temp">
+    <h3>대기 온도</h3>
+    <div class="value" id="airTemp">-</div>
+    <div class="status" id="airTempStatus">-</div>
+  </div>
+  <div class="card">
+    <img src="https://cdn-icons-png.flaticon.com/512/728/728093.png" alt="humidity">
+    <h3>대기 습도</h3>
+    <div class="value" id="humidity">-</div>
+    <div class="status" id="humidityStatus">-</div>
+  </div>
+</div>
+
+<script>
+async function loadSensorData() {
+  try {
+    const res = await fetch("https://yourdomain.com/api/sensor/realtime"); // 사용자 센서 API 주소
+    const data = await res.json();
+
+    document.getElementById("lux").innerText = `${data.lux} lux`;
+    document.getElementById("luxStatus").innerText = data.lux >= 15000 ? "적정" : "부족";
+    document.getElementById("luxStatus").className = "status " + (data.lux >= 15000 ? "ok" : "bad");
+
+    document.getElementById("moisture").innerText = `${data.soilMoisture} %`;
+    let moistureClass = "ok";
+    let moistureText = "적정";
+    if (data.soilMoisture < 20) { moistureClass = "bad"; moistureText = "건조"; }
+    else if (data.soilMoisture > 35) { moistureClass = "warn"; moistureText = "과습"; }
+    document.getElementById("moistureStatus").innerText = moistureText;
+    document.getElementById("moistureStatus").className = "status " + moistureClass;
+
+    document.getElementById("soilTemp").innerText = `${data.soilTemp} ℃`;
+    let soilTempClass = (data.soilTemp >= 15 && data.soilTemp <= 25) ? "ok" : "warn";
+    document.getElementById("soilTempStatus").innerText = (soilTempClass === "ok" ? "적정" : "주의");
+    document.getElementById("soilTempStatus").className = "status " + soilTempClass;
+
+    document.getElementById("airTemp").innerText = `${data.airTemp} ℃`;
+    let airTempClass = (data.airTemp >= 10 && data.airTemp <= 28) ? "ok" : "warn";
+    document.getElementById("airTempStatus").innerText = (airTempClass === "ok" ? "적정" : "주의");
+    document.getElementById("airTempStatus").className = "status " + airTempClass;
+
+    document.getElementById("humidity").innerText = `${data.airHumidity} %`;
+    let humClass = (data.airHumidity >= 40 && data.airHumidity <= 70) ? "ok" : "warn";
+    document.getElementById("humidityStatus").innerText = (humClass === "ok" ? "적정" : "주의");
+    document.getElementById("humidityStatus").className = "status " + humClass;
+
+    const now = new Date();
+    document.getElementById("timestamp").innerText = `데이터 수집 시간: ${now.toLocaleString("ko-KR")}`;
+  } catch (e) {
+    document.getElementById("timestamp").innerText = "❌ 센서 데이터를 불러올 수 없습니다.";
+    console.error("데이터 수집 실패:", e);
+  }
+}
+
+loadSensorData();
+setInterval(loadSensorData, 30000);
+</script>
+
+</body>
+</html>
